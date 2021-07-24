@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::resource('threads', ThreadController::class);
 Route::resource('replies', ReplyController::class);
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('threads.index');
 });
 
 Auth::routes();
@@ -26,4 +26,6 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+
+

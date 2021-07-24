@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Thread;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ThreadController extends Controller
 {
@@ -21,7 +23,7 @@ class ThreadController extends Controller
      */
     public function index()
     {
-        $threads = $this->thread->paginate(15);
+        $threads = $this->thread->orderBy('created_at', 'DESC')->paginate(15);
 
         return view('threads.index', compact('threads'));
     }
@@ -45,35 +47,45 @@ class ThreadController extends Controller
     public function store(Request $request)
     {
         try {
-            $this->thread->create($request->all());
-            dd('criado com sucesso!');
+            $thread = $request->all();
+            $thread['slug'] = Str::slug($thread['title']);
 
+            $user = User::find(1);
+            $thread = $user->threads()->create($thread);
 
+            flash('criado com sucesso!')->success();
+            return redirect()->route('threads.show', $thread->slug);
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            $message = env('APP_DEBUG') ? $e->getMessage() : 'Erro ao processar a requisição';
+            flash($message)->warning();
+            return redirect()->back();
+
         }
     }
 
     /**
      * Display the specified resource.
      *
-     * @param \App\Models\Thread $thread
+     * @param string $thread
      * @return \Illuminate\Http\Response
      */
-    public function show(Thread $thread)
+    public function show($thread)
     {
+        $thread = $this->thread->whereSlug($thread)->first();
+        if (!$thread) return redirect()->route('threads.index');
 
+        return view('threads.show', compact('thread'));
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param \App\Models\Thread $thread
+     * @param string $thread
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit($thread)
     {
-        $thread = $this->thread->find($id);
+        $thread = $this->thread->whereSlug($thread)->first();
         return view('threads.edit', compact('thread'));
     }
 
@@ -81,39 +93,47 @@ class ThreadController extends Controller
      * Update the specified resource in storage.
      *
      * @param \Illuminate\Http\Request $request
-     * @param \App\Models\Thread $thread
+     * @param string $thread
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Thread $thread)
+    public function update(Request $request, $thread)
     {
 
         try {
-            $thread = $this->thread->find($thread->id);
+            $thread = $this->thread->whereSlug($thread)->first();
             $thread->update($request->all());
-            dd('update com sucesso!');
+
+            flash('update com sucesso!')->success();
+            return redirect()->route('threads.show', $thread->slug);
 
 
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            $message = env('APP_DEBUG') ? $e->getMessage() : 'Erro ao processar a requisição';
+            flash($message)->warning();
+            return redirect()->back();
         }
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param \App\Models\Thread $thread
+     * @param string $thread
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Thread $thread)
+    public function destroy($thread)
     {
         try {
-            $thread = $this->thread->find($thread->id);
+            $thread = $this->thread->whereSlug($thread)->first();
             $thread->delete();
-            dd('delete com sucesso!');
 
+            flash('delete com sucesso!')->success();
+            return redirect()->route('threads.index');
 
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            $message = env('APP_DEBUG') ? $e->getMessage() : 'Erro ao processar a requisição';
+
+            flash($message)->warning();
+            return redirect()->back();
         }
     }
 }
